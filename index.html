@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mili XV — La Aventura Interactiva | Chirimbolo Estudio</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Shrikhand&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- QRious (QR real en canvas) + html2canvas (Descargar Pase VIP en PNG) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #FFFDF5;
+            --yellow: #FFDE59;
+            --pink: #FF3366;
+            --mint: #00F5D4;
+            --purple: #9B5DE5;
+            --dark: #141414;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(#141414 1.2px, transparent 1.2px);
+            background-size: 22px 22px;
+            color: var(--dark);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .font-groovy { font-family: 'Shrikhand', cursive; }
+        .font-fun { font-family: 'Fredoka', sans-serif; }
+
+        /* Tarjetas y Botones estilo Sticker Pop */
+        .pop-box {
+            background: #FFFFFF;
+            border: 3.5px solid #141414;
+            box-shadow: 7px 7px 0px #141414;
+        }
+
+        .pop-btn {
+            border: 3px solid #141414;
+            box-shadow: 4px 4px 0px #141414;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 700;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .pop-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #141414;
+        }
+        .pop-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #141414;
+        }
+
+        /* Transición suave entre pantallas */
+        .step-screen {
+            display: none;
+            animation: slideInScreen 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        .step-screen.active {
+            display: flex;
+        }
+
+        @keyframes slideInScreen {
+            0% { opacity: 0; transform: translateY(22px) scale(0.97); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Globitos cómicos cuando se escapa el botón NO */
+        @keyframes floatTaunt {
+            0% { opacity: 1; transform: translateY(0) scale(0.85) rotate(-4deg); }
+            50% { opacity: 1; transform: translateY(-18px) scale(1.06) rotate(4deg); }
+            100% { opacity: 0; transform: translateY(-42px) scale(0.95); }
+        }
+        .taunt-pill {
+            position: fixed;
+            z-index: 80;
+            pointer-events: none;
+            animation: floatTaunt 1.4s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between min-h-screen p-3 sm:p-6 select-none">
+
+    <!-- AUDIO PERSONALIZADO OPCIONAL PARA VS CODE -->
+    <audio id="custom-audio" loop preload="auto">
+        <!-- Sofía: Descomentá abajo para poner tu archivo MP3 en VS Code -->
+        <!-- <source src="musica-fiesta.mp3" type="audio/mpeg"> -->
+    </audio>
+
+    <!-- ==========================================================================
+         BARRA SUPERIOR TIPO STORIES DE INSTAGRAM + CONTROL DE MÚSICA Y ATRÁS
+         ========================================================================== -->
+    <header class="w-full max-w-xl mx-auto z-30 pt-1">
+        <!-- Barritas de progreso de las 7 pantallas -->
+        <div class="grid grid-cols-7 gap-1.5 mb-3" id="story-progress-bars">
+            <div class="h-2.5 rounded-full border-2 border-black bg-[#FF3366] transition-all" id="prog-1"></div>
+            <div class="h-2.5 rounded-full border-2 border-black bg-white transition-all" id="prog-2"></div>
+            <div class="h-2.5 rounded-full border-2 border-black bg-white transition-all" id="prog-3"></div>
+            <div class="h-2.5 rounded-full border-2 border-black bg-white transition-all" id="prog-4"></div>
+            <div class="h-2.5 rounded-full border-2 border-black bg-white transition-all" id="prog-5"></div>
+            <div class="h-2.5 rounded-full border-2 border-black bg-white transition-all" id="prog-6"></div>
+            <div class="h-2.5 rounded-full border-2 border-black bg-white transition-all" id="prog-7"></div>
+        </div>
+
+        <!-- Cabecera con indicador de nivel, botón atrás y música -->
+        <div class="flex items-center justify-between px-1">
+            <button id="btn-prev-step" onclick="prevStep()" class="invisible pop-btn bg-white px-3 py-1.5 rounded-full text-xs flex items-center gap-1">
+                <i class="fa-solid fa-arrow-left"></i> Atrás
+            </button>
+
+            <div class="pop-box px-3.5 py-1 rounded-full bg-[#FFDE59] text-xs font-fun font-bold">
+                Nivel <span id="step-indicator">1</span> de 7 • Mili Fest XV
+            </div>
+
+            <button onclick="toggleMusic()" id="music-toggle" class="pop-btn bg-[#00F5D4] w-9 h-9 rounded-full flex items-center justify-center text-sm" title="Música">
+                <i id="music-icon" class="fa-solid fa-volume-xmark"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ==========================================================================
+         CONTENEDOR CENTRAL DE LAS 7 PANTALLAS INTERACTIVAS
+         ========================================================================== -->
+    <main class="flex-1 flex items-center justify-center w-full max-w-xl mx-auto my-4 relative">
+
+        <!-- ======================================================================
+             PANTALLA 1: EL BOTÓN "NO" IMPOSIBLE DE APRETAR
+             ====================================================================== -->
+        <section id="screen-1" class="step-screen active w-full flex-col">
+            <div class="pop-box rounded-3xl p-6 sm:p-8 text-center relative overflow-hidden bg-white">
+                <span class="inline-block pop-btn bg-[#00F5D4] px-3.5 py-1 rounded-full text-xs uppercase mb-3 -rotate-2">
+                    🚨 Pregunta Eliminatoria #1
+                </span>
+
+                <h1 class="font-groovy text-4xl sm:text-5xl text-[#FF3366] leading-tight mb-2">
+                    ¡ME CUMPLO 15!
+                </h1>
+                <p class="font-fun font-bold text-base sm:text-lg text-stone-800 mb-4">
+                    Sábado 14 de Noviembre • 21:30 Hs
+                </p>
+
+                <div class="bg-[#FFFDF5] border-2 border-dashed border-black rounded-2xl p-4 mb-5">
+                    <p class="text-sm text-stone-700 font-semibold">
+                        Para desbloquear la dirección secreta y el menú de comida rica, respondé:
+                    </p>
+                    <p class="font-fun font-bold text-xl text-black mt-1">
+                        ¿VAS A VENIR A MI FIESTA? 🤨
+                    </p>
+                </div>
+
+                <!-- Contador cómico de intentos de tocar el NO -->
+                <div id="no-counter-alert" class="hidden mb-4 py-1.5 px-3 rounded-xl bg-pink-100 border-2 border-black text-xs font-bold text-[#FF3366]">
+                    👀 Veces que quisiste poner una excusa y fallaste: <span id="no-tries-count" class="text-sm font-extrabold">0</span>
+                </div>
+
+                <!-- Botones SÍ y NO -->
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 min-h-[95px] relative">
+                    <button id="btn-yes-step1" onclick="finishStep1()" class="pop-btn bg-[#FF3366] text-white px-7 py-4 rounded-2xl text-base sm:text-lg uppercase tracking-wide z-20">
+                        ¡OBVIO QUE VOY! 💃🎉
+                    </button>
+
+                    <button id="btn-no-step1"
+                            onmouseover="runAwayNo(event)"
+                            ontouchstart="runAwayNo(event)"
+                            onclick="runAwayNo(event)"
+                            class="pop-btn bg-[#FFDE59] text-black px-5 py-3.5 rounded-2xl text-sm uppercase z-30">
+                        No puedo 😢
+                    </button>
+                </div>
+
+                <p class="text-[11px] text-stone-500 font-semibold mt-4">
+                    (Intentá tocar "No puedo", te desafío 😂)
+                </p>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             PANTALLA 2: ¿POR QUÉ VENÍS A LA FIESTA? (TEST CON RESPUESTAS GRACIOSAS)
+             ====================================================================== -->
+        <section id="screen-2" class="step-screen w-full flex-col">
+            <div class="pop-box rounded-3xl p-6 sm:p-8 bg-white">
+                <div class="text-center mb-5">
+                    <span class="inline-block pop-btn bg-[#FFDE59] px-3.5 py-1 rounded-full text-xs uppercase mb-2">
+                        🕵️‍♀️ Detector de Mentiras
+                    </span>
+                    <h2 class="font-groovy text-3xl sm:text-4xl text-black leading-tight">
+                        ¿Por qué venís realmente?
+                    </h2>
+                    <p class="text-xs sm:text-sm text-stone-600 font-semibold mt-1">
+                        Tocá una opción para ver dónde te vamos a sentar:
+                    </p>
+                </div>
+
+                <!-- Opciones -->
+                <div class="space-y-3 mb-5">
+                    <button onclick="pickMotive(0)" id="motive-0" class="motive-opt w-full pop-btn bg-stone-50 hover:bg-yellow-100 p-3.5 rounded-2xl text-left flex items-center gap-3">
+                        <span class="text-2xl">🍔</span>
+                        <div>
+                            <p class="font-fun font-bold text-sm sm:text-base text-black">Voy por la comida y la mesa dulce</p>
+                            <p class="text-[11px] text-stone-500 font-normal">Estoy a agua y lechuga desde el martes.</p>
+                        </div>
+                    </button>
+
+                    <button onclick="pickMotive(1)" id="motive-1" class="motive-opt w-full pop-btn bg-stone-50 hover:bg-yellow-100 p-3.5 rounded-2xl text-left flex items-center gap-3">
+                        <span class="text-2xl">🍹</span>
+                        <div>
+                            <p class="font-fun font-bold text-sm sm:text-base text-black">Voy por la barra libre y el descontrol</p>
+                            <p class="text-[11px] text-stone-500 font-normal">De la pista me sacan únicamente con grúa.</p>
+                        </div>
+                    </button>
+
+                    <button onclick="pickMotive(2)" id="motive-2" class="motive-opt w-full pop-btn bg-stone-50 hover:bg-yellow-100 p-3.5 rounded-2xl text-left flex items-center gap-3">
+                        <span class="text-2xl">👀</span>
+                        <div>
+                            <p class="font-fun font-bold text-sm sm:text-base text-black">Voy por el chisme y criticar outfits</p>
+                            <p class="text-[11px] text-stone-500 font-normal">Quiero ver quién llora en el video cronológico.</p>
+                        </div>
+                    </button>
+
+                    <button onclick="pickMotive(3)" id="motive-3" class="motive-opt w-full pop-btn bg-stone-50 hover:bg-yellow-100 p-3.5 rounded-2xl text-left flex items-center gap-3">
+                        <span class="text-2xl">😇</span>
+                        <div>
+                            <p class="font-fun font-bold text-sm sm:text-base text-black">¡Porque te amo Mili, sos la mejor!</p>
+                            <p class="text-[11px] text-stone-500 font-normal">(Opción chupamedias para quedar bien).</p>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Respuesta Graciosa Dinámica (Aparece al tocar una opción) -->
+                <div id="motive-reply-card" class="hidden pop-box rounded-2xl p-4 bg-[#00F5D4] text-center mb-4">
+                    <p id="motive-reply-title" class="font-groovy text-xl text-black mb-1"></p>
+                    <p id="motive-reply-text" class="text-xs sm:text-sm font-bold text-stone-900 mb-3"></p>
+                    <button onclick="goToStep(3)" class="pop-btn bg-[#FF3366] text-white w-full py-3 rounded-xl text-sm uppercase">
+                        Acepto mi destino 👉 Siguiente Pantalla
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             PANTALLA 3: CONTROL DE VESTUARIO (DRESS CODE CON HUMOR)
+             ====================================================================== -->
+        <section id="screen-3" class="step-screen w-full flex-col">
+            <div class="pop-box rounded-3xl p-6 sm:p-8 bg-white">
+                <div class="text-center mb-5">
+                    <span class="inline-block pop-btn bg-[#9B5DE5] text-white px-3.5 py-1 rounded-full text-xs uppercase mb-2">
+                        👗 Policía de la Moda
+                    </span>
+                    <h2 class="font-groovy text-3xl sm:text-4xl text-black">
+                        ¿Qué te pensás poner?
+                    </h2>
+                    <p class="text-xs sm:text-sm text-stone-600 font-semibold mt-1">
+                        Código oficial: <strong>Elegante Sport</strong>. Pero confesá tu plan real:
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 mb-5">
+                    <button onclick="pickOutfit(0)" class="outfit-opt pop-btn bg-stone-50 p-3.5 rounded-2xl text-left flex items-center gap-3">
+                        <span class="text-2xl">👠</span>
+                        <div>
+                            <p class="font-fun font-bold text-sm sm:text-base">Tirando facha nivel Alfombra Roja</p>
+                            <p class="text-[11px] text-stone-500">Pero con zapatillas escondidas en el auto para las 2 AM.</p>
+                        </div>
+                    </button>
+
+                    <button onclick="pickOutfit(1)" class="outfit-opt pop-btn bg-stone-50 p-3.5 rounded-2xl text-left flex items-center gap-3">
+                        <span class="text-2xl">👰‍♀️</span>
+                        <div>
+                            <p class="font-fun font-bold text-sm sm:text-base">Un vestido Blanco / Champagne re lindo</p>
+                            <p class="text-[11px] text-stone-500">Para competirle a la quinceañera.</p>
+                        </div>
+                    </button>
+
+                    <button onclick="pickOutfit(2)" class="outfit-opt pop-btn bg-stone-50 p-3.5 rounded-2xl text-left flex items-center gap-3">
+                        <span class="text-2xl">🩳</span>
+                        <div>
+                            <p class="font-fun font-bold text-sm sm:text-base">Bermuda, ojotas y la camiseta de Boca/River</p>
+                            <p class="text-[11px] text-stone-500">Bien cómodo para atacar el pernil.</p>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Respuesta del Dress Code -->
+                <div id="outfit-reply-card" class="hidden pop-box rounded-2xl p-4 bg-[#FFDE59] text-center">
+                    <p id="outfit-reply-title" class="font-groovy text-lg sm:text-xl text-black mb-1"></p>
+                    <p id="outfit-reply-text" class="text-xs sm:text-sm font-bold text-stone-800 mb-3"></p>
+                    <button onclick="goToStep(4)" class="pop-btn bg-black text-white w-full py-3 rounded-xl text-sm uppercase">
+                        ¡Entendido! 👉 Pasar a la Música
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             PANTALLA 4: EL SOBORNO AL DJ + SPOTIFY
+             ====================================================================== -->
+        <section id="screen-4" class="step-screen w-full flex-col">
+            <div class="pop-box rounded-3xl p-6 sm:p-8 bg-white">
+                <div class="text-center mb-5">
+                    <span class="inline-block pop-btn bg-[#1DB954] text-black px-3.5 py-1 rounded-full text-xs uppercase mb-2">
+                        <i class="fa-brands fa-spotify"></i> Cabina del DJ
+                    </span>
+                    <h2 class="font-groovy text-3xl sm:text-4xl text-black">
+                        Prohibido quedarse sentado
+                    </h2>
+                    <p class="text-xs sm:text-sm text-stone-600 font-semibold mt-1">
+                        ¿Con qué tema salís corriendo a la pista aunque estés comiendo?
+                    </p>
+                </div>
+
+                <!-- Botón a Spotify -->
+                <a href="https://open.spotify.com/" target="_blank" rel="noopener noreferrer"
+                   class="pop-btn bg-[#1DB954] text-black w-full py-3 rounded-2xl text-xs uppercase flex items-center justify-center gap-2 mb-4">
+                    <i class="fa-brands fa-spotify text-lg"></i> Sumar temas a la Playlist de Spotify
+                </a>
+
+                <!-- Pedir canción acá mismo -->
+                <div class="bg-stone-100 p-4 rounded-2xl border-2 border-black mb-4">
+                    <label class="block text-xs font-extrabold uppercase mb-2">O dejale tu pedido obligatorio al DJ acá:</label>
+                    <div class="flex gap-2">
+                        <input id="dj-song-input" type="text" placeholder="Ej: Los Palmeras / Emilia / Cachengue..."
+                               class="flex-1 px-3 py-2.5 rounded-xl border-2 border-black text-sm font-semibold focus:outline-none">
+                        <button onclick="addFunnySong()" class="pop-btn bg-[#FFDE59] px-4 py-2.5 rounded-xl text-xs uppercase">
+                            + Sumar
+                        </button>
+                    </div>
+                    <p id="dj-funny-feedback" class="text-xs font-bold text-[#FF3366] mt-2 hidden"></p>
+                </div>
+
+                <!-- Lista rápida -->
+                <ul id="dj-mini-list" class="space-y-1.5 text-xs font-bold text-stone-700 mb-5 max-h-28 overflow-y-auto">
+                    <li class="bg-stone-100 px-3 py-1.5 rounded-lg border border-black">🔥 Emilia & Tini — La_Original.mp3 (Aprobado)</li>
+                    <li class="bg-stone-100 px-3 py-1.5 rounded-lg border border-black">🕺 El Meneaito — (Pedido polémico de la Tía Marta)</li>
+                </ul>
+
+                <button onclick="goToStep(5)" class="pop-btn bg-[#FF3366] text-white w-full py-3.5 rounded-2xl text-sm uppercase">
+                    Siguiente: Fotos & El Regalo 👉
+                </button>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             PANTALLA 5: FOTOS "EXPECTATIVA VS REALIDAD" + MEDIDOR DE RATAS (REGALO)
+             ====================================================================== -->
+        <section id="screen-5" class="step-screen w-full flex-col">
+            <div class="pop-box rounded-3xl p-6 sm:p-8 bg-white">
+                <div class="text-center mb-4">
+                    <span class="inline-block pop-btn bg-[#00F5D4] text-black px-3.5 py-1 rounded-full text-xs uppercase mb-1">
+                        📸 Fotos & Soborno
+                    </span>
+                    <h2 class="font-groovy text-2xl sm:text-3xl text-black">
+                        Mi Book + El Momento Incómodo 💸
+                    </h2>
+                </div>
+
+                <!-- Mini Carrusel Interactivo: Tocás la foto y cambia con comentario gracioso -->
+                <div onclick="nextFunnyPhoto()" class="pop-box rounded-2xl p-3 bg-[#FFDE59] mb-5 cursor-pointer text-center relative">
+                    <span class="absolute top-5 right-5 pop-box bg-white px-2.5 py-1 rounded-full text-[10px] font-extrabold">
+                        Tocá la foto para cambiar (<span id="photo-counter">1/3</span>) 👆
+                    </span>
+                    <div class="aspect-[16/10] rounded-xl overflow-hidden border-2 border-black bg-stone-200">
+                        <img id="funny-gallery-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=80" class="w-full h-full object-cover">
+                    </div>
+                    <p id="funny-gallery-caption" class="font-fun font-bold text-xs sm:text-sm mt-2 text-black">
+                        💅 Foto 1: Fingiendo ser una lady para el book (Dura 5 minutos)
+                    </p>
+                </div>
+
+                <!-- Medidor de Ratas / Alias -->
+                <div class="bg-stone-100 p-4 rounded-2xl border-2 border-black mb-5 text-center">
+                    <p class="text-xs font-extrabold uppercase mb-1">Medidor de Amor (Financiame el Viaje):</p>
+                    <input id="rat-slider" type="range" min="1" max="4" value="3" oninput="updateRatMeter()" class="w-full accent-[#FF3366] cursor-pointer">
+                    <p id="rat-meter-label" class="font-fun font-bold text-xs sm:text-sm text-[#FF3366] my-1">
+                        😍 Nivel 3: Invitado VIP (Habilitado a repetir postre)
+                    </p>
+
+                    <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border-2 border-black mt-2">
+                        <span id="alias-code" class="font-mono font-extrabold text-xs sm:text-sm">MILI.QUINCE.FIESTA</span>
+                        <button onclick="copyAliasCode()" class="pop-btn bg-[#00F5D4] px-3 py-1 rounded-lg text-xs">
+                            <span id="copy-btn-lbl">Copiar Alias</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="goToStep(6)" class="pop-btn bg-[#FF3366] text-white w-full py-3.5 rounded-2xl text-sm uppercase">
+                    Ver Dónde es la Fiesta (Datos Reales) 👉
+                </button>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             PANTALLA 6: DATOS OFICIALES + CUENTA REGRESIVA + MAPA POR ENCIMA
+             ====================================================================== -->
+        <section id="screen-6" class="step-screen w-full flex-col">
+            <div class="pop-box rounded-3xl p-6 sm:p-8 bg-white">
+                <div class="text-center mb-4">
+                    <span class="inline-block pop-btn bg-[#FFDE59] text-black px-3.5 py-1 rounded-full text-xs uppercase mb-2">
+                        📍 Ahora sí, fuera de chiste
+                    </span>
+                    <h2 class="font-groovy text-3xl sm:text-4xl text-black">
+                        Coordenadas del Fiestón
+                    </h2>
+                </div>
+
+                <!-- Cuenta regresiva -->
+                <div class="grid grid-cols-4 gap-2 mb-5 text-center">
+                    <div class="pop-box rounded-xl p-2 bg-[#00F5D4]">
+                        <span id="cd-d" class="font-groovy text-xl sm:text-2xl">00</span>
+                        <span class="block text-[9px] font-extrabold uppercase">Días</span>
+                    </div>
+                    <div class="pop-box rounded-xl p-2 bg-[#00F5D4]">
+                        <span id="cd-h" class="font-groovy text-xl sm:text-2xl">00</span>
+                        <span class="block text-[9px] font-extrabold uppercase">Horas</span>
+                    </div>
+                    <div class="pop-box rounded-xl p-2 bg-[#00F5D4]">
+                        <span id="cd-m" class="font-groovy text-xl sm:text-2xl">00</span>
+                        <span class="block text-[9px] font-extrabold uppercase">Min</span>
+                    </div>
+                    <div class="pop-box rounded-xl p-2 bg-[#00F5D4]">
+                        <span id="cd-s" class="font-groovy text-xl sm:text-2xl">00</span>
+                        <span class="block text-[9px] font-extrabold uppercase">Seg</span>
+                    </div>
+                </div>
+
+                <!-- Datos del Salón -->
+                <div class="bg-stone-100 rounded-2xl p-4 border-2 border-black space-y-2 text-xs sm:text-sm mb-5">
+                    <p>📅 <strong>Día:</strong> Sábado 14 de Noviembre, 2026</p>
+                    <p>⏰ <strong>Horario:</strong> 21:30 Hs PUNTUAL (Cerramos tranquera 22:15 hs)</p>
+                    <p>🏰 <strong>Lugar:</strong> Quinta Los Naranjos — Av. Libertador 4520</p>
+                    <p>🚗 <strong>Estacionamiento:</strong> Adentro del predio sin cargo.</p>
+                </div>
+
+                <!-- Botón que abre el Mapa por encima de la invitación -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <button onclick="openMapOverlay()" class="pop-btn bg-[#FFDE59] text-black py-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-map-location-dot"></i> Ver Mapa Aquí
+                    </button>
+                    <button onclick="saveCalendarEvent()" class="pop-btn bg-white text-black py-3 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5">
+                        <i class="fa-regular fa-calendar-check"></i> Agendar Fecha
+                    </button>
+                </div>
+
+                <button onclick="goToStep(7)" class="pop-btn bg-[#FF3366] text-white w-full py-3.5 rounded-2xl text-sm uppercase">
+                    Última Pantalla: Tu Pase VIP y Confirmar 👉
+                </button>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             PANTALLA 7: PASE VIP CON TU RANGO DEL JUEGO + WHATSAPP FINAL
+             ====================================================================== -->
+        <section id="screen-7" class="step-screen w-full flex-col">
+            <div class="pop-box rounded-3xl p-6 sm:p-8 bg-white">
+                <div class="text-center mb-4">
+                    <span class="inline-block pop-btn bg-[#00F5D4] text-black px-3.5 py-1 rounded-full text-xs uppercase mb-1">
+                        🏆 ¡Llegaste al Final!
+                    </span>
+                    <h2 class="font-groovy text-2xl sm:text-3xl text-black">
+                        Tu Pase Oficial + Confirmación
+                    </h2>
+                    <p class="text-xs text-stone-600 font-semibold">
+                        Escribí tu nombre para imprimir tu credencial con los resultados del test y mandame el WhatsApp:
+                    </p>
+                </div>
+
+                <!-- Nombre y Menú -->
+                <div class="space-y-3 mb-4">
+                    <input id="final-guest-name" type="text" oninput="updateFinalVipCard()" placeholder="Escribí tu Nombre y Apellido..."
+                           class="w-full px-4 py-3 rounded-xl border-2 border-black text-sm font-bold bg-yellow-50 focus:outline-none">
+                    
+                    <select id="final-guest-diet" class="w-full px-4 py-2.5 rounded-xl border-2 border-black text-xs font-bold bg-white">
+                        <option value="Como de todo (Sin restricciones) 🍕">Menú: Como de todo (Sin restricciones) 🍕</option>
+                        <option value="Vegetariano 🌱">Menú: Vegetariano 🌱</option>
+                        <option value="Vegano 🥑">Menú: Vegano 🥑</option>
+                        <option value="Celíaco (Sin TACC) 🌾">Menú: Celíaco (Sin TACC) 🌾</option>
+                    </select>
+                </div>
+
+                <!-- TICKET VIP DESCARGABLE CON EL RANGO QUE LE TOCÓ -->
+                <div id="final-vip-ticket" class="pop-box rounded-2xl p-4 bg-[#FFDE59] text-black mb-4">
+                    <div class="flex justify-between items-center border-b-2 border-dashed border-black pb-2 mb-2">
+                        <div>
+                            <p class="text-[9px] font-extrabold uppercase text-[#FF3366]">CREDENCIAL ANTI-COLADOS • MILI XV</p>
+                            <h4 class="font-groovy text-base leading-none">INVITADO AUTORIZADO</h4>
+                        </div>
+                        <span id="final-vip-code" class="bg-white border border-black px-2 py-0.5 rounded text-[10px] font-mono font-extrabold">#MIL-8492</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 items-center">
+                        <div class="col-span-2 text-left pr-1">
+                            <p class="text-[10px] uppercase font-bold text-stone-700">Invitado/a:</p>
+                            <p id="ticket-name-lbl" class="font-fun font-bold text-sm sm:text-base truncate">TU NOMBRE ACÁ</p>
+                            <p id="ticket-motive-lbl" class="text-[11px] font-extrabold text-[#FF3366] mt-0.5"> Mesa: Al lado de la Tía Marta 🍔</p>
+                            <p id="ticket-outfit-lbl" class="text-[10px] font-bold text-stone-800">Look: Alta Facha 👠</p>
+                        </div>
+                        <div class="col-span-1 bg-white p-1.5 rounded-xl border-2 border-black flex flex-col items-center">
+                            <canvas id="final-qr-canvas" class="w-16 h-16"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones Finales: Descargar PNG y Enviar WhatsApp -->
+                <div class="space-y-2.5">
+                    <button type="button" onclick="downloadTicketPng()" id="btn-dl-ticket" class="pop-btn bg-white text-black w-full py-2.5 rounded-xl text-xs uppercase flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> Descargar mi Credencial en Imagen
+                    </button>
+
+                    <button type="button" onclick="sendFinalWhatsApp()" class="pop-btn bg-[#FF3366] text-white w-full py-4 rounded-2xl text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-lg"></i> Enviar Todo por WhatsApp a Mili
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CRÉDITO INFERIOR CHIRIMBOLO ESTUDIO -->
+    <footer class="text-center pb-2 z-20">
+        <span class="inline-block pop-box bg-white px-4 py-1 rounded-full text-[11px] font-bold">
+            ✨ Experiencia creada por <strong class="text-[#FF3366]">Chirimbolo Estudio</strong>
+        </span>
+    </footer>
+
+    <!-- ==========================================================================
+         VENTANA MODAL DEL MAPA (SE ABRE POR ENCIMA Y SE CIERRA)
+         ========================================================================== -->
+    <div id="map-overlay" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+        <div onclick="closeMapOverlay()" class="absolute inset-0"></div>
+        <div class="relative z-10 w-full max-w-xl pop-box rounded-3xl overflow-hidden bg-white">
+            <div class="flex items-center justify-between px-5 py-3.5 bg-[#FFDE59] border-b-2 border-black">
+                <div>
+                    <h3 class="font-groovy text-xl">📍 Quinta Los Naranjos</h3>
+                    <p class="text-xs font-bold">Av. Libertador 4520 — ¡Prohibido perderse!</p>
+                </div>
+                <button onclick="closeMapOverlay()" class="pop-btn bg-white w-9 h-9 rounded-full flex items-center justify-center font-bold">✕</button>
+            </div>
+            <div class="w-full h-[300px]">
+                <iframe src="https://www.openstreetmap.org/export/embed.html?bbox=-58.555%2C-34.465%2C-58.530%2C-34.448&amp;layer=mapnik&amp;marker=-34.4566%2C-58.5426" class="w-full h-full border-0"></iframe>
+            </div>
+            <div class="p-4 bg-white flex justify-between gap-3">
+                <a href="https://www.google.com/maps/search/?api=1&query=Quinta+Los+Naranjos+Buenos+Aires" target="_blank" class="pop-btn bg-[#FF3366] text-white px-4 py-2.5 rounded-xl text-xs uppercase flex-1 text-center">
+                    Abrir en Google Maps
+                </a>
+                <button onclick="closeMapOverlay()" class="pop-btn bg-[#00F5D4] text-black px-5 py-2.5 rounded-xl text-xs uppercase">
+                    Cerrar Mapa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST DE AVISOS -->
+    <div id="toast-msg" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-opacity duration-300">
+        <div class="pop-box bg-[#FFDE59] px-5 py-2 rounded-full font-fun font-bold text-xs">
+            <span id="toast-text">¡Listo!</span>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         LÓGICA DE NAVEGACIÓN POR PANTALLAS Y RESPUESTAS CÓMICAS
+         ========================================================================== -->
+    <script>
+        const CONFIG = {
+            quinceaneraName: "Mili",
+            eventDate: "2026-11-14T21:30:00",
+            whatsappNumber: "5491123456789"
+        };
+
+        let currentStep = 1;
+        let noEscapeCount = 0;
+        let yesBtnScale = 1;
+        let chosenMotive = "Mesa con la Tía Marta (Voy por el morfi) 🍔";
+        let chosenOutfit = "Tirando facha con zapas en el baúl 👠";
+        let chosenSong = "";
+
+        /* --------------------------------------------------------------------------
+           NAVEGACIÓN ENTRE LAS 7 PANTALLAS (TIPO STORIES)
+           -------------------------------------------------------------------------- */
+        function goToStep(stepNumber) {
+            // Oculta todas las pantallas y activa solo la elegida
+            document.querySelectorAll('.step-screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(`screen-${stepNumber}`);
+            if (target) target.classList.add('active');
+
+            currentStep = stepNumber;
+            document.getElementById('step-indicator').textContent = stepNumber;
+
+            // Mostrar u ocultar botón "Atrás"
+            const prevBtn = document.getElementById('btn-prev-step');
+            if (stepNumber > 1) {
+                prevBtn.classList.remove('invisible');
+            } else {
+                prevBtn.classList.add('invisible');
+            }
+
+            // Actualizar las 7 barritas de progreso arriba
+            for (let i = 1; i <= 7; i++) {
+                const bar = document.getElementById(`prog-${i}`);
+                if (i < stepNumber) {
+                    bar.className = "h-2.5 rounded-full border-2 border-black bg-[#00F5D4] transition-all";
+                } else if (i === stepNumber) {
+                    bar.className = "h-2.5 rounded-full border-2 border-black bg-[#FF3366] transition-all";
+                } else {
+                    bar.className = "h-2.5 rounded-full border-2 border-black bg-white transition-all";
+                }
+            }
+
+            playPopSound();
+            if (stepNumber === 7) updateFinalVipCard();
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                goToStep(currentStep - 1);
+            }
+        }
+
+        /* --------------------------------------------------------------------------
+           PANTALLA 1: EL BOTÓN "NO" QUE SE ESCAPA CON FRASES GRACIOSAS
+           -------------------------------------------------------------------------- */
+        const TAUNT_MESSAGES = [
+            "¡Jajaja casi lo tocás! 😂",
+            "¡Ni se te ocurra faltar! 🤨",
+            "Error 404: Excusa rechazada 🚫",
+            "¡Tu cubierto ya está pago! 💸",
+            "¡Te mando a buscar en patrullero! 🚓",
+            "¡Dedos lentos! Tocá el SÍ 👉",
+            "¡La Tía Marta pregunta por vos! 👀"
+        ];
+
+        function runAwayNo(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            const noBtn = document.getElementById('btn-no-step1');
+            const yesBtn = document.getElementById('btn-yes-step1');
+
+            noEscapeCount++;
+            document.getElementById('no-counter-alert').classList.remove('hidden');
+            document.getElementById('no-tries-count').textContent = noEscapeCount;
+
+            playBoing();
+
+            const pad = 25;
+            const maxX = Math.max(pad, window.innerWidth - noBtn.offsetWidth - pad);
+            const maxY = Math.max(pad, window.innerHeight - noBtn.offsetHeight - pad);
+
+            const randX = Math.floor(Math.random() * (maxX - pad)) + pad;
+            const randY = Math.floor(Math.random() * (maxY - pad)) + pad;
+
+            noBtn.style.position = 'fixed';
+            noBtn.style.left = randX + 'px';
+            noBtn.style.top = randY + 'px';
+            noBtn.style.transition = 'left 0.16s ease-out, top 0.16s ease-out';
+
+            const labels = ["¡No me atrapás! 😜", "¡Uy se corrió!", "¡Tocá el SÍ!", "¡Prohibido faltar!", "¡Jajaja nop!"];
+            noBtn.textContent = labels[noEscapeCount % labels.length];
+
+            // Globito gracioso donde saltó
+            const pill = document.createElement('div');
+            pill.className = "taunt-pill pop-box bg-white px-3 py-1 rounded-full text-xs font-fun font-bold";
+            pill.style.left = Math.min(window.innerWidth - 180, Math.max(12, randX - 20)) + 'px';
+            pill.style.top = Math.max(20, randY - 38) + 'px';
+            pill.textContent = TAUNT_MESSAGES[noEscapeCount % TAUNT_MESSAGES.length];
+            document.body.appendChild(pill);
+            setTimeout(() => pill.remove(), 1400);
+
+            // Agranda el botón SÍ
+            yesBtnScale = Math.min(1.35, yesBtnScale + 0.06);
+            yesBtn.style.transform = `scale(${yesBtnScale})`;
+        }
+
+        function finishStep1() {
+            startMusic();
+            goToStep(2);
+        }
+
+        /* --------------------------------------------------------------------------
+           PANTALLA 2: RESPUESTAS GRACIOSAS DE "¿POR QUÉ VENÍS?"
+           -------------------------------------------------------------------------- */
+        const MOTIVE_RESPONSES = [
+            {
+                title: "¡Te siento al lado de la Tía Marta! 🍔",
+                text: "Hacen la dupla ideal: ella ya tiene 3 tuppers en la cartera para guardarse los sanguchitos de miga y vos atacás la isla de papas fritas.",
+                summary: "Mesa: Al lado de la Tía Marta 🍔"
+            },
+            {
+                title: "¡Asignado/a pegado a la Barra y al DJ! 🍹",
+                text: "Avisale a tu hígado que el sábado no se duerme. Tenés prohibido sentarte hasta que prendan las luces blancas del salón a las 5:30 AM.",
+                summary: "Mesa: Pegada a la Barra Libre 🍹"
+            },
+            {
+                title: "¡Mesa VIP con Vista Panorámica para Chusmear! 👀",
+                text: "Ubicación estratégica para anotar quién llegó con quién, quién se sacó los zapatos a los 15 minutos y quién desafina cantando.",
+                summary: "Mesa: Panelista de Chismes 👀"
+            },
+            {
+                title: "¡Mentiroso/a! Igual venís por el morfi 😂",
+                text: "Pero por tirarme flores te ganaste prioridad en las fotos conmigo y permiso oficial para colarte primero en la mesa dulce.",
+                summary: "Mesa: Favorito/a de Mili 👑"
+            }
+        ];
+
+        function pickMotive(idx) {
+            const data = MOTIVE_RESPONSES[idx];
+            chosenMotive = data.summary;
+
+            document.querySelectorAll('.motive-opt').forEach((b, i) => {
+                b.style.backgroundColor = (i === idx) ? '#FFDE59' : '#fafaf9';
+            });
+
+            const card = document.getElementById('motive-reply-card');
+            document.getElementById('motive-reply-title').textContent = data.title;
+            document.getElementById('motive-reply-text').textContent = data.text;
+            card.classList.remove('hidden');
+            playBoing();
+        }
+
+        /* --------------------------------------------------------------------------
+           PANTALLA 3: RESPUESTAS DE VESTUARIO (DRESS CODE)
+           -------------------------------------------------------------------------- */
+        const OUTFIT_RESPONSES = [
+            {
+                title: "¡Aprobado por el Jurado! 👠",
+                text: "Esa es la actitud: primero salimos divinos en las fotos formales y a las 2 de la mañana pelamos las zapatillas para saltar todo.",
+                summary: "Look: Alta Facha + Zapas 👠"
+            },
+            {
+                title: "¡ALTO AHÍ! 🚨 Prohibido el Blanco y Champagne",
+                text: "Si caés de blanco o dorado, la Tía Marta tiene orden oficial de tirarte un vaso de fernet encima en la recepción. ¡Avisado/a estás!",
+                summary: "Look: Prometió NO ir de blanco 🚨"
+            },
+            {
+                title: "¡Te rebota el patovica en la esquina! 😂",
+                text: "Ponete algo fachero aunque sea hasta el vals, después te dejamos aflojarte la camisa en el carnaval carioca.",
+                summary: "Look: Domado por el Dress Code 👔"
+            }
+        ];
+
+        function pickOutfit(idx) {
+            const data = OUTFIT_RESPONSES[idx];
+            chosenOutfit = data.summary;
+
+            document.querySelectorAll('.outfit-opt').forEach((b, i) => {
+                b.style.backgroundColor = (i === idx) ? '#00F5D4' : '#fafaf9';
+            });
+
+            const card = document.getElementById('outfit-reply-card');
+            document.getElementById('outfit-reply-title').textContent = data.title;
+            document.getElementById('outfit-reply-text').textContent = data.text;
+            card.classList.remove('hidden');
+            playBoing();
+        }
+
+        /* --------------------------------------------------------------------------
+           PANTALLA 4: PEDIDOS AL DJ
+           -------------------------------------------------------------------------- */
+        function addFunnySong() {
+            const input = document.getElementById('dj-song-input');
+            const val = input.value.trim();
+            if (!val) {
+                showToast("¡Escribí un tema primero! 🎵");
+                return;
+            }
+            chosenSong = val;
+            const li = document.createElement('li');
+            li.className = "bg-[#00F5D4] px-3 py-1.5 rounded-lg border border-black";
+            li.textContent = `🎧 ${val} (¡Amenaza enviada al DJ!)`;
+            document.getElementById('dj-mini-list').prepend(li);
+
+            const fb = document.getElementById('dj-funny-feedback');
+            fb.textContent = `✅ Anotado: Si cuando suene "${val}" no estás bailando en el medio de la ronda, hay tabla.`;
+            fb.classList.remove('hidden');
+            input.value = '';
+            playBoing();
+        }
+
+        /* --------------------------------------------------------------------------
+           PANTALLA 5: FOTOS INTERACTIVAS + MEDIDOR DE RATAS
+           -------------------------------------------------------------------------- */
+        const FUNNY_PHOTOS = [
+            {
+                url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=80",
+                caption: "💅 Foto 1: Fingiendo ser una lady para el book (Dura 5 minutos)"
+            },
+            {
+                url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=80",
+                caption: "🔥 Foto 2: Practicando mi cara de sorpresa cuando me canten el feliz cumpleaños"
+            },
+            {
+                url: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=900&q=80",
+                caption: "👀 Foto 3: Fichando desde lejos quién comió y no dejó regalo"
+            }
+        ];
+        let photoIdx = 0;
+
+        function nextFunnyPhoto() {
+            photoIdx = (photoIdx + 1) % FUNNY_PHOTOS.length;
+            document.getElementById('funny-gallery-img').src = FUNNY_PHOTOS[photoIdx].url;
+            document.getElementById('funny-gallery-caption').textContent = FUNNY_PHOTOS[photoIdx].caption;
+            document.getElementById('photo-counter').textContent = `${photoIdx + 1}/3`;
+            playPopSound();
+        }
+
+        function updateRatMeter() {
+            const val = document.getElementById('rat-slider').value;
+            const texts = {
+                1: "🐀 Nivel 1: Rata Extrema (Te servimos hielo al plato)",
+                2: "🍕 Nivel 2: Invitado Cumplidor (Tenés acceso al pernil)",
+                3: "😍 Nivel 3: Invitado VIP (Habilitado a repetir postre)",
+                4: "💸 Nivel 4: ¡Mi Padrino/Madrina Oficial! (Mesa presidencial)"
+            };
+            document.getElementById('rat-meter-label').textContent = texts[val];
+        }
+
+        function copyAliasCode() {
+            const alias = document.getElementById('alias-code').textContent;
+            navigator.clipboard.writeText(alias);
+            document.getElementById('copy-btn-lbl').textContent = "¡Copiado! 🙏";
+            showToast("¡Alias copiado al portapapeles! 💸");
+        }
+
+        /* --------------------------------------------------------------------------
+           PANTALLA 6: CUENTA REGRESIVA Y MAPA MODAL POR ENCIMA
+           -------------------------------------------------------------------------- */
+        function initCountdown() {
+            const target = new Date(CONFIG.eventDate).getTime();
+            function tick() {
+                const diff = target - Date.now();
+                if (diff <= 0) return;
+                document.getElementById('cd-d').textContent = String(Math.floor(diff / 86400000)).padStart(2, '0');
+                document.getElementById('cd-h').textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+                document.getElementById('cd-m').textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+                document.getElementById('cd-s').textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+            }
+            tick();
+            setInterval(tick, 1000);
+        }
+
+        function openMapOverlay() {
+            document.getElementById('map-overlay').classList.remove('hidden');
+            document.getElementById('map-overlay').classList.add('flex');
+        }
+        function closeMapOverlay() {
+            document.getElementById('map-overlay').classList.add('hidden');
+            document.getElementById('map-overlay').classList.remove('flex');
+        }
+
+        function saveCalendarEvent() {
+            window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text=XV+Años+de+Mili&dates=20261115T003000Z/20261115T083000Z&location=Quinta+Los+Naranjos", "_blank");
+        }
+
+        /* --------------------------------------------------------------------------
+           PANTALLA 7: PASE VIP CON QR REAL + ENVÍO DE WHATSAPP COMPLETO
+           -------------------------------------------------------------------------- */
+        let qrObj = null;
+
+        function updateFinalVipCard() {
+            const rawName = document.getElementById('final-guest-name').value.trim();
+            const guestName = rawName.length > 0 ? rawName.toUpperCase() : "TU NOMBRE ACÁ";
+            document.getElementById('ticket-name-lbl').textContent = guestName;
+            document.getElementById('ticket-motive-lbl').textContent = chosenMotive;
+            document.getElementById('ticket-outfit-lbl').textContent = chosenOutfit;
+
+            let hash = 0;
+            for (let i = 0; i < guestName.length; i++) hash = guestName.charCodeAt(i) + ((hash << 5) - hash);
+            const code = rawName.length > 0 ? `#MIL-${Math.abs(hash % 9000) + 1000}` : "#MIL-8492";
+            document.getElementById('final-vip-code').textContent = code;
+
+            const canvas = document.getElementById('final-qr-canvas');
+            const qrText = `MILI XV | AUTORIZADO: ${guestName} | ${chosenMotive} | ${code}`;
+            if (canvas && typeof QRious !== 'undefined') {
+                if (!qrObj) {
+                    qrObj = new QRious({ element: canvas, size: 150, value: qrText });
+                } else {
+                    qrObj.value = qrText;
+                }
+            }
+        }
+
+        async function downloadTicketPng() {
+            const card = document.getElementById('final-vip-ticket');
+            const btn = document.getElementById('btn-dl-ticket');
+            const old = btn.innerHTML;
+            btn.textContent = "Generando imagen...";
+            try {
+                const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#FFDE59' });
+                const a = document.createElement('a');
+                a.download = 'Credencial-Mili-XV.png';
+                a.href = canvas.toDataURL('image/png');
+                a.click();
+                showToast("¡Credencial guardada en tu celu! 🎟️");
+            } catch (e) {
+                showToast("Error al descargar.");
+            } finally {
+                btn.innerHTML = old;
+            }
+        }
+
+        function sendFinalWhatsApp() {
+            const name = document.getElementById('final-guest-name').value.trim();
+            if (!name) {
+                showToast("¡Escribí tu nombre arriba primero! 👆");
+                document.getElementById('final-guest-name').focus();
+                return;
+            }
+            const diet = document.getElementById('final-guest-diet').value;
+            const code = document.getElementById('final-vip-code').textContent;
+
+            const lines = [
+                `🎉 *¡PASÉ EL JUEGO Y CONFIRMO QUE VOY A LOS 15 DE MILI!* 🎉`,
+                `(Intenté tocar el botón "No puedo" ${noEscapeCount} veces 😂)`,
+                ``,
+                `👤 *Invitado/a:* ${name}`,
+                `🎟️ *Pase N°:* ${code}`,
+                `🪑 *Resultado del Test:* ${chosenMotive}`,
+                `👗 *Promesa de Look:* ${chosenOutfit}`,
+                `🍽️ *${diet}*`,
+                chosenSong ? `🎵 *Tema pedido al DJ:* ${chosenSong}` : ``
+            ].filter(Boolean).join('\n');
+
+            window.open(`https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(lines)}`, '_blank');
+        }
+
+        /* --------------------------------------------------------------------------
+           AUDIO Y EFECTOS DE SONIDO (WEB AUDIO API)
+           -------------------------------------------------------------------------- */
+        let audioCtx = null;
+        let musicPlaying = false;
+        let loopTimer = null;
+
+        function getCtx() {
+            if (!audioCtx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AC();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        function playBoing() {
+            try {
+                const ctx = getCtx();
+                const osc = ctx.createOscillator();
+                const g = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(240, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(620, ctx.currentTime + 0.13);
+                g.gain.setValueAtTime(0.12, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                osc.connect(g); g.connect(ctx.destination);
+                osc.start(); osc.stop(ctx.currentTime + 0.15);
+            } catch (e) {}
+        }
+
+        function playPopSound() {
+            try {
+                const ctx = getCtx();
+                const osc = ctx.createOscillator();
+                const g = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(420, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(680, ctx.currentTime + 0.08);
+                g.gain.setValueAtTime(0.08, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
+                osc.connect(g); g.connect(ctx.destination);
+                osc.start(); osc.stop(ctx.currentTime + 0.09);
+            } catch (e) {}
+        }
+
+        function startMusic() {
+            if (musicPlaying) return;
+            const custom = document.getElementById('custom-audio');
+            if (custom && custom.querySelector('source')) {
+                custom.play();
+                musicPlaying = true;
+                document.getElementById('music-icon').className = 'fa-solid fa-volume-high';
+                return;
+            }
+            try {
+                const ctx = getCtx();
+                musicPlaying = true;
+                document.getElementById('music-icon').className = 'fa-solid fa-volume-high';
+                const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63];
+                let step = 0;
+                loopTimer = setInterval(() => {
+                    if (!musicPlaying) return;
+                    const osc = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = notes[step % notes.length];
+                    g.gain.setValueAtTime(0.04, ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+                    osc.connect(g); g.connect(ctx.destination);
+                    osc.start(); osc.stop(ctx.currentTime + 0.23);
+                    step++;
+                }, 300);
+            } catch (e) {}
+        }
+
+        function toggleMusic() {
+            if (musicPlaying) {
+                musicPlaying = false;
+                clearInterval(loopTimer);
+                document.getElementById('music-icon').className = 'fa-solid fa-volume-xmark';
+                showToast("Música en silencio 🤫");
+            } else {
+                startMusic();
+                showToast("¡Música activada! 🎶");
+            }
+        }
+
+        let toastTimeout;
+        function showToast(txt) {
+            const el = document.getElementById('toast-msg');
+            document.getElementById('toast-text').textContent = txt;
+            el.classList.remove('opacity-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => el.classList.add('opacity-0'), 2500);
+        }
+
+        window.onload = () => {
+            initCountdown();
+            updateFinalVipCard();
+        };
+    </script>
+</body>
+</html>
